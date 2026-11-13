@@ -12,14 +12,16 @@ namespace picos {
     namespace random {
 /// Distribution concept currently only suports uniform real distributions.
         template<typename T>
-        concept distribution = std::same_as<T, std::uniform_real_distribution<float>> ||
+        concept distribution = std::same_as<T, std::uniform_real_distribution<float>>  ||
                                std::same_as<T, std::uniform_real_distribution<double>> ||
-                               std::same_as<T, std::uniform_int_distribution<short>>;
+                               std::same_as<T, std::uniform_int_distribution<short>>   ||
+                               std::same_as<T, std::uniform_int_distribution<size_t>>;
 
 ///  Base type concept for random distributions.
         template<typename T>
         concept base = std::floating_point<T> ||
-                       std::same_as<T, short>;
+                       std::same_as<T, short> ||
+                       std::same_as<T, size_t>;
 
 //------------------------------------------------------------------------------
 ///  @brief Get the number of threads used.

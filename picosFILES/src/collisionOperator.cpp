@@ -2,6 +2,7 @@
 #include <numbers>
 #include <algorithm>
 #include <cassert>
+#include <bitset>
 
 #include "collisionOperator.h"
 
@@ -30,10 +31,11 @@ void coll_operator_TYP::u_CollisionOperator(double &w,
     double nu_E_dt = BoozerFactor*nu_E<energyOperatorModel> (xab,nuab0,erfp_xab,Mb,Ma,gb)*DT;
 
     // Calculate substeps:
-    // Limit substepping to 100: Note this matches the functions of the original
+    // Limit substepping to 64: Note this matches the functions of the original
     // master branch since that trucated the step size before the final nu_E_dt
     // was computed.
-    const size_t Nstep = std::min(static_cast<int> (round(nu_E_dt*2.5)) + 1, 100);
+    const size_t Nstep = std::min(static_cast<int> (round(nu_E_dt*2.5)) + 1, 64);
+    size_t bits = randuni();
 
     // Apply operator:
     nu_E_dt = nu_E_dt/Nstep;
@@ -44,12 +46,12 @@ void coll_operator_TYP::u_CollisionOperator(double &w,
     const double A = 1 - 2*nu_E_dt;
 
     w = w*w;
-    for (size_t kk = 0; kk<Nstep; kk++)
+    for (size_t kk = 0; kk<Nstep; kk++, bits >>= 1)
     {
         const double E0 = mof*w;
 
         // Random number ±2:
-        const short Rm = 4*randuni() - 2;
+        const short Rm = 4*(bits & 1) - 2;
 
         const double C = Rm*sqrt(Tbnu_e_dt*E0);
 //  NOTE: w is actually w^2 here. Use the absolute value to prevent this from
@@ -87,15 +89,16 @@ void coll_operator_TYP:: xi_CollisionOperator(double &xi,
 
     // Limit substepping:
     // ===========================
-    if (Nstep > 100)
+    if (Nstep > 64)
     {
         cout << "\33[2K\rNstep for 'xi' operator = " << Nstep << endl;
-        Nstep = 100;
+        Nstep = 64;
     }
+    size_t bits = randuni();
 
     // Apply operator:
     // ===========================
-    for (size_t kk = 0; kk<Nstep; kk++)
+    for (size_t kk = 0; kk<Nstep; kk++, bits >>= 1)
     {
         // Deterministic part:
         // ==================
@@ -104,7 +107,7 @@ void coll_operator_TYP:: xi_CollisionOperator(double &xi,
         // Stochastic part:
         // ===============
         // Random number between 0 and 1:
-        const short Rm = 2*randuni() - 1;
+        const short Rm = 2*(bits & 1) - 1;
 
         const double C = Rm*sqrt((1.0 - xi*xi)*nu_D_dt);
 
@@ -377,11 +380,23 @@ double coll_operator_TYP::Gb(const double xab, const double xab2, const double e
     }
 }
 
+//------------------------------------------------------------------------------
+///  @brief d erf(x)/d x
+///
+///  @param[in] xab2 x^2 argument.
+///  @returns The erf(x)'.
+//------------------------------------------------------------------------------
 double coll_operator_TYP::erfp(const double xab2) const
 {
     return 2.0*numbers::inv_sqrtpi_v<double>*exp(-xab2);
 }
 
+//------------------------------------------------------------------------------
+///  @brief d^2 erf(x)/d x^2
+///
+///  @param[in] xerfp_xab erf(x)' argument.
+///  @returns The erf(x)''.
+//------------------------------------------------------------------------------
 double coll_operator_TYP::erfpp(const double xerfp_xab) const
 {
     return -2.0*xerfp_xab;

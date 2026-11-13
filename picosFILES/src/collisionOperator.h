@@ -5,6 +5,7 @@
 #include <iostream>
 #include <cmath>
 #include <vector>
+#include <limits>
 
 #define ARMA_ALLOW_FAKE_GCC
 #include "armadillo"
@@ -20,9 +21,9 @@ class coll_operator_TYP
 {
 private:
     // A uniform distribution.
-    typedef uniform_int_distribution<short> uniform;
+    typedef uniform_int_distribution<size_t> uniform;
     // A Uniform random instance type.
-    typedef picos::random::instance<short, uniform, 0, 1> uniform_random;
+    typedef picos::random::instance<size_t, uniform, 0, std::numeric_limits<size_t>::max()> uniform_random;
 
     // Ion moment interpolation functions:
     void interpolateIonMoments(const params_TYP &params, ionSpecies_TYP &iona, const ionSpecies_TYP &ionb) const;
@@ -94,13 +95,15 @@ private:
 
 public:
     coll_operator_TYP() :
-    randoms(picos::random::instances<short, uniform, 0, 1> (device())) {}
+    randoms(picos::random::instances<size_t, uniform, 0, std::numeric_limits<size_t>::max()> (device())) {}
 
     void ApplyCollisions_AllSpecies(const params_TYP &params, const CS_TYP &CS, vector<ionSpecies_TYP> &IONS, const electrons_TYP &electrons);
 
     void unit_test() {
-        const double wx = randoms[picos::random::thread()]();
-        const double wy = randoms[picos::random::thread()]();
+        const double wx = static_cast<double> (randoms[picos::random::thread()]())
+                        / static_cast<double> (std::numeric_limits<size_t>::max());
+        const double wy = static_cast<double> (randoms[picos::random::thread()]())
+                        / static_cast<double> (std::numeric_limits<size_t>::max());
         double w;
         double xi;
         double sinphi;
